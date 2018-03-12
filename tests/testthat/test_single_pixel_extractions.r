@@ -32,6 +32,15 @@ test_that("pixel location download check",{
                                path = "~",
                                silent = FALSE))
   
+  # remove file in home directory after successful download
+  # CRAN policy seems to apply to unit tests not run by users
+  # as well
+  if(!inherits(df_ext_home,"try-error")){
+    file.remove(list.files("~",
+                           "*.csv",
+                           full.names = TRUE))
+  }
+  
   # download out of range data (space and time)
   df_range = try(download_daymet(start = 1970,
                                  end = 1980,
