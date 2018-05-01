@@ -5,6 +5,8 @@
 #' 
 #' @param file a Daymet Single Pixel data file
 #' @param site a sitename (default = \code{NULL})
+#' @param skip_header do not ingest header meta-data, logical \code{FALSE}
+#' or \code{TRUE} (default = \code{FALSE})
 #' @return A nested data structure including site meta-data, the full
 #' header and the data as a `data.frame()`.
 #' @keywords time series, Daymet
@@ -30,7 +32,8 @@
 #' }
 
 read_daymet <- function(file = NULL,
-                        site = NULL){
+                        site = NULL,
+                        skip_header = FALSE){
   
   # stop on missing files
   if (is.null(file) ){
@@ -46,25 +49,65 @@ read_daymet <- function(file = NULL,
   # change in the future with a few lines this then does not break
   # the script
   header = try(readLines(file, n = 30), silent = TRUE)
-  header_break = grep("^$", header)
-  header = tolower(header[1:header_break])
   
-  # read ancillary data from downloaded file header
-  # this includes, tile nr and altitude
-  tile = as.numeric(strsplit(header[grep("tile", header)], ":")[[1]][2])
-  alt = as.numeric(gsub("meters",
-                        "",
-                        strsplit(header[grep("elevation", header)],
-                                 ":")[[1]][2]))
+  # get the location of the true table header
+  # based upon the two fields which will always be there
+  # year and yday
+  table_cols = grep("year,yday", header)
   
-  # geographic location
-  lat = strsplit(header[grep("latitude", header)]," ")[[1]][2]
-  lon = strsplit(header[grep("latitude", header)]," ")[[1]][4]
+  # warning / stop if key data table header elements are not found
+  if (length(table_cols) == 0){
+    stop("Key table header elements are missing, Daymet format change?")
+  }
+  
+  # if no header is present (table_cols == 1)
+  # skip extraction of meta-data
+  if (table_cols > 1){
+      
+    # header is defined as everything before the
+    header = tolower(header[1:(table_cols-1)])
+    
+    # read ancillary data from downloaded file header
+    # this includes, tile nr and altitude etc. use gregexpr()
+    # and regmatches to extract relevant data
+    tile = as.numeric(regmatches(header[grep("tile:", header)],
+                                 gregexpr("[-+]*[0-9,.]+",
+                                          header[grep("tile:", header)])))
+    
+    alt = as.numeric(regmatches(header[grep("elevation:", header)],
+                                gregexpr("[-+]*[0-9,.]+",
+                                         header[grep("elevation:", header)])))
+    
+    lat = as.numeric(unlist(regmatches(header[grep("latitude:", header)],
+                                       gregexpr("(?<=latitude: )[-+]*[0-9,.]+",
+                                                header[grep("latitude:", header)],
+                                                perl = TRUE))))
+    
+    lon = as.numeric(unlist(regmatches(header[grep("longitude:", header)],
+                                       gregexpr("(?<=longitude: )[-+]*[0-9,.]+",
+                                                header[grep("longitude:", header)],
+                                                perl = TRUE))))
+    
+    # check if all fields are correctly populated,
+    # if not stop and return nothing
+    if (length(c(lat,lon,tile,alt)) < 4 ){
+      stop("Key table header elements are missing, Daymet format change?")
+    }
+  } 
+  
+  # if no header is detected or desired skip
+  # and provide fill values
+  if (table_cols <= 1 | skip_header) {
+    tile = NULL
+    alt = NULL
+    lat = NULL
+    lon = NULL
+  }
   
   # read in the real climate data
   data = utils::read.table(file,
                            sep = ',',
-                           skip = header_break,
+                           skip = (table_cols - 1),
                            header = TRUE)
   
   # put all data in a list
