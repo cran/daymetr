@@ -1,4 +1,4 @@
-#' Count days meeting set criteria (for gridded Daymet data files)
+#' Count days meeting set criteria
 #'
 #' Function to count the number of days in a given time period
 #' that meet a given set of criteria. This can be used to extract indices 
@@ -31,7 +31,7 @@
 #' # read in the Daymet file and report back the number
 #' # of days in a year with a minimum temperature lower
 #' # than 15 degrees C
-#' r = calc_nd(file.path(tempdir(),"tmin_daily_1980_ncss.nc"),
+#' r <- calc_nd(file.path(tempdir(),"tmin_daily_1980_ncss.nc"),
 #'             criteria = "<",
 #'             value = 15,
 #'             internal = TRUE)
@@ -40,16 +40,18 @@
 #' raster::plot(r)
 #' }
 
-calc_nd <- function(file = NULL,
-                    start_doy = 1,
-                    end_doy = 365,
-                    criteria = NULL,
-                    value = NULL,
-                    internal = FALSE,
-                    path = tempdir()){
+calc_nd <- function(
+  file,
+  start_doy = 1,
+  end_doy = 365,
+  criteria,
+  value,
+  internal = FALSE,
+  path = tempdir()
+  ){
   
   # perform input checks
-  if(is.null(file) | is.null(criteria) | is.null(value)){
+  if(missing(file) | missing(criteria) | missing(value)){
     stop('Please specify file, criteria and value.')
   }
   

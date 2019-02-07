@@ -2,10 +2,7 @@
 % Please edit documentation in R/daymet_grid_offset.r
 \name{daymet_grid_offset}
 \alias{daymet_grid_offset}
-\title{Returns an offset dataset with data running from offset DOY in year - 1 to
-offset DOY in the current year. Two years of data (730 data layers) are
-required for this function to work. The output serves as input for further
-data processing and / or ecosystem modelling efforts.}
+\title{Returns a time shifted (offset) dataset}
 \usage{
 daymet_grid_offset(data, offset = 264)
 }
@@ -23,7 +20,7 @@ data processing and / or ecosystem modelling efforts.
 \examples{
 
 \dontrun{
-my_subset = daymet_gridded_offset(mystack, offset = 264)
+my_subset <- daymet_gridded_offset(mystack, offset = 264)
 }
 }
 \keyword{daily}

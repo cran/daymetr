@@ -2,18 +2,14 @@
 % Please edit documentation in R/daymet_grid_tmean.r
 \name{daymet_grid_tmean}
 \alias{daymet_grid_tmean}
-\title{Averages tmax and tmin 'Daymet' gridded products into
-a single mean daily temperature (tmean) gridded output (geotiff)
-for easy post processing and modelling. Optionally a raster object
-is returned to the current workspace.}
+\title{Averages tmax and tmin 'Daymet' gridded products}
 \usage{
-daymet_grid_tmean(path = tempdir(), product = NULL, year = NULL,
-  internal = FALSE)
+daymet_grid_tmean(path = tempdir(), product, year, internal = FALSE)
 }
 \arguments{
 \item{path}{full path location of the daymet tiles (default = tempdir())}
 
-\item{product}{which tile to process}
+\item{product}{either a tile number or a ncss product name}
 
 \item{year}{which year to process}
 
@@ -22,10 +18,9 @@ write the output to file)
 using the Daymet file format protocol.}
 }
 \description{
-Averages tmax and tmin 'Daymet' gridded products into
-a single mean daily temperature (tmean) gridded output (geotiff)
-for easy post processing and modelling. Optionally a raster object
-is returned to the current workspace.
+Combines data into a single mean daily temperature (tmean) 
+gridded output (geotiff) for easy post processing and modelling. 
+Optionally a raster object is returned to the current workspace.
 }
 \examples{
 
@@ -46,7 +41,7 @@ download_daymet_tiles(tiles = 11935,
 # the result to the R workspace (internal = TRUE)
 # If internal = FALSE, a file tmean_11935_1980.tif
 # is written into the source path (path_with_daymet_tiles)
-tmean = daymet_grid_tmean(path = tempdir(),
+tmean <- daymet_grid_tmean(path = tempdir(),
                           tile = 11935,
                           year = 1980,
                           internal = TRUE)

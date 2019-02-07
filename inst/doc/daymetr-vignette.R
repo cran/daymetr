@@ -9,18 +9,21 @@ library(daymetr)
 library(ncdf4)
 library(raster)
 library(sp)
+library(dplyr)
+library(ggplot2)
 
 # load tile outlines
 tile_outlines
 
 
-## ----eval = TRUE---------------------------------------------------------
-df <- download_daymet(site = "Oak Ridge National Laboratories",
-                lat = 36.0133,
-                lon = -84.2625,
-                start = 2000,
-                end = 2010,
-                internal = TRUE)
+## ----eval = FALSE--------------------------------------------------------
+#  df <- download_daymet(site = "Oak Ridge National Laboratories",
+#                  lat = 36.0133,
+#                  lon = -84.2625,
+#                  start = 2000,
+#                  end = 2010,
+#                  internal = TRUE,
+#                  simplify = TRUE) # return tidy data !!
 
 ## ----eval = FALSE--------------------------------------------------------
 #  # code is not run
@@ -29,27 +32,30 @@ df <- download_daymet(site = "Oak Ridge National Laboratories",
 #                        end = 2010,
 #                        internal = TRUE)
 
+## ----eval = TRUE, echo = FALSE, warning=FALSE, message=FALSE, error=FALSE----
+# load demo data in package
+df <- read_daymet(system.file(package = "daymetr","extdata/demo_data.csv"),
+                 simplify = TRUE)
+
 ## ----eval = TRUE---------------------------------------------------------
 str(df)
 
 ## ----fig.width = 7, fig.height=3-----------------------------------------
 # simple graph of Daymet data
-par(mar=c(4,4,1,1))
-plot(as.Date(paste(df$data$year,
-                   df$data$yday,
-                   sep = "-"),
-             "%Y-%j"),
-     df$data$tmax..deg.c.,
-     xlab = "Date",
-     ylab = expression("max. temperature (" * degree * "C)"),
-     type = "l",
-     col = "lightblue")
+df %>%
+  mutate(date = as.Date(paste(year, yday, sep = "-"), "%Y-%j")) %>%
+  filter(measurement == "tmax..deg.c.") %>%
+  ggplot() +
+  geom_line(aes(x = date, y = value)) +
+  facet_wrap(~ measurement, ncol = 2)
 
 ## ----eval = FALSE--------------------------------------------------------
 #  # code not run
-#  df$data <- df$data %>%
-#    mutate(tmean = (tmax..deg.c. + tmin..deg.c.)/2,
-#           date = as.Date(paste(year, yday, sep = "-"), "%Y-%j"))
+#  df %>%
+#    mutate(date = as.Date(paste(year, yday, sep = "-"), "%Y-%j")) %>%
+#    group_by(date) %>%
+#    filter(measurement == "tmax..deg.c." | measurement == "tmin..deg.c.") %>%
+#    summarize(mean_temp = mean(value))
 
 ## ---- fig.width = 7, fig.height = 7--------------------------------------
 # plot the tile outlines
@@ -76,26 +82,32 @@ plot(tile_outlines)
 #                        param = "tmin")
 #  
 
-## ---- fig.width = 7, fig.height = 7--------------------------------------
-# download monthly
-download_daymet_ncss(location = c(34, -82, 33.75, -81.75),
-                     start = 1980,
-                     end = 1980,
-                     frequency = "monthly",
-                     param = c("tmin","tmax"),
-                     path = tempdir(),
-                     silent = TRUE)
+## ---- eval = FALSE-------------------------------------------------------
+#  # download monthly
+#  download_daymet_ncss(location = c(34, -82, 33.75, -81.75),
+#                       start = 1980,
+#                       end = 1980,
+#                       frequency = "monthly",
+#                       param = c("tmin","tmax"),
+#                       path = tempdir(),
+#                       silent = TRUE)
 
-# read in the downloaded data
-r = raster::stack(paste0(tempdir(),"/tmin_monavg_1980_ncss.nc"))
+## ---- fig.width = 7, fig.height = 7, warning=FALSE, message=FALSE--------
+# read in the demo data from the package for speed
+r <- raster::stack(system.file(package = "daymetr","extdata/tmin_monavg_1980_ncss.nc"))
+
+# to set the correct projection use
+raster::projection(r) <- "+proj=lcc +lat_1=25 +lat_2=60 +lat_0=42.5 +lon_0=-100 +x_0=0 +y_0=0 +a=6378137 +b=6356752.314706705 +units=m +no_defs"
+
+# reproject to lat lon
+r <- raster::projectRaster(r, crs = "+init=epsg:4326")
 
 # plot the monthly mean minimum temperature for 1980
 plot(r)
 
-## ---- fig.width = 7, fig.height = 7--------------------------------------
-
+## ---- , fig.width = 7, fig.height = 7, warning=FALSE, message=FALSE------
 # plot the monthly mean minimum temperature for 1980
-r_tmean = daymet_grid_tmean(path = tempdir(),
+r_tmean <- daymet_grid_tmean(path = system.file(package = "daymetr","extdata"),
                             product = "monavg",
                             year = 1980,
                             internal = TRUE)

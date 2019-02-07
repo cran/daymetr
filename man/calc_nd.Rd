@@ -2,10 +2,10 @@
 % Please edit documentation in R/calc_nd.r
 \name{calc_nd}
 \alias{calc_nd}
-\title{Count days meeting set criteria (for gridded Daymet data files)}
+\title{Count days meeting set criteria}
 \usage{
-calc_nd(file = NULL, start_doy = 1, end_doy = 365, criteria = NULL,
-  value = NULL, internal = FALSE, path = tempdir())
+calc_nd(file, start_doy = 1, end_doy = 365, criteria, value,
+  internal = FALSE, path = tempdir())
 }
 \arguments{
 \item{file}{path of a file containing the daily gridded Daymet data}
@@ -47,7 +47,7 @@ download_daymet_ncss()
 # read in the Daymet file and report back the number
 # of days in a year with a minimum temperature lower
 # than 15 degrees C
-r = calc_nd(file.path(tempdir(),"tmin_daily_1980_ncss.nc"),
+r <- calc_nd(file.path(tempdir(),"tmin_daily_1980_ncss.nc"),
             criteria = "<",
             value = 15,
             internal = TRUE)

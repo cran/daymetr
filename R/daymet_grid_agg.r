@@ -35,14 +35,16 @@
 #'                  fun = "mean")
 #'  }
 
-daymet_grid_agg = function(file = NULL,
-                           int = "seasonal",
-                           fun = "mean",
-                           internal = FALSE,
-                           path = tempdir()){
+daymet_grid_agg <- function(
+  file,
+  int = "seasonal",
+  fun = "mean",
+  internal = FALSE,
+  path = tempdir()
+  ){
   
   # stop on missing files
-  if (is.null(file) ){
+  if (missing(file) ){
     stop('File not provided...')
   }
   
@@ -141,7 +143,7 @@ daymet_grid_agg = function(file = NULL,
     param <- strsplit(input_file, "_")[[1]][1]
     year <- strsplit(input_file, "_")[[1]][3]
     output_file <- file.path(normalizePath(path),
-                             sprintf('%s_agg_%s_%s%s.tif', param, year, int, fun))
+                          sprintf('%s_agg_%s_%s%s.tif', param, year, int, fun))
     
     # write raster object to file
     raster::writeRaster(x = result,
@@ -151,4 +153,4 @@ daymet_grid_agg = function(file = NULL,
     # return to workspace
     return(result)
   }
-  }
+}
