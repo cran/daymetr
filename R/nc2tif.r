@@ -15,7 +15,6 @@
 #' @param silent limit verbose output (default = FALSE)
 #' @return Converted geotiff files of all netCDF data in the provided
 #' directory (path).
-#' @keywords Daymet, climate data, gridded data, netCDF, conversion
 #' @export
 #' @examples
 #'
@@ -49,13 +48,15 @@ nc2tif <- function(
   ){
 
   # CRAN file policy
-  if (identical(path, tempdir())){
+  if (identical(path, tempdir())  && !silent){
     message("Using default path tempdir() ...")
   }
   
-  # providing initial feedback
-  message("nc2tif is working. Be patient, this may take a while...\n")
-  
+  if(!silent){
+    # providing initial feedback
+    message("nc2tif is working. Be patient, this may take a while...\n")
+  }
+    
   # if no file is provide read data
   # from provided path
   if(is.null(files)){
@@ -87,18 +88,20 @@ nc2tif <- function(
   lapply(files, function(file){
     
     if(!any(grep(pattern="annttl|annavg", file))){
-      data <- try(raster::brick(file), silent = TRUE)
+      data <- try(suppressWarnings(raster::brick(file)), silent = TRUE)
     }else{
-      data <- try(raster::raster(file), silent = TRUE)
+      data <- try(suppressWarnings(raster::raster(file)), silent = TRUE)
     }
 
     if(inherits(data, "try-error")){
       message("Conversion error...corrupt file?")
     } else {
-    raster::writeRaster(data,
-                        filename = tools::file_path_sans_ext(file),
-                        format = "GTiff",
-                        overwrite = TRUE)
+      suppressWarnings(
+        raster::writeRaster(data,
+                            filename = tools::file_path_sans_ext(file),
+                            format = "GTiff",
+                            overwrite = TRUE)    
+      )
     }
   })
   

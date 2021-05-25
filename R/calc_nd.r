@@ -19,7 +19,6 @@
 #' statistics for every pixel which meet the predefined criteria. Output files
 #' if written to file will be named nd_YYYY.tif (with YYYY the year of the
 #' processed tile or ncss netCDF file).
-#' @keywords gridded time series, Daymet, summary
 #' @export
 #' @examples
 #'
@@ -83,14 +82,14 @@ calc_nd <- function(
   if (internal == FALSE){
     
     # create output file name
-    year <- strsplit(file, "_")[[1]][3]
+    year <- strsplit(basename(file), "_")[[1]][3]
     output_file <- file.path(path,
                              sprintf('nd_%s.tif',year))
     
     # write result to file
-    raster::writeRaster(result,
+    suppressWarnings(raster::writeRaster(result,
                         output_file,
-                        overwrite = TRUE)
+                        overwrite = TRUE))
   } else {
     # return result
     return(result)

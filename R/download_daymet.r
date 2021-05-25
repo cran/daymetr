@@ -17,7 +17,6 @@
 #' or \code{TRUE} (default = \code{TRUE})
 #' @return Daymet data for a point location, returned to the R workspace or
 #' written to disk as a csv file.
-#' @keywords Daymet, climate data, single pixel
 #' @export
 #' @examples
 #'
@@ -116,9 +115,9 @@ download_daymet <- function(
  
   # construct the query to be served to the server
   query <- list("lat" = lat,
-               "lon" = lon,
-               "vars" = "tmax,tmin,dayl,prcp,srad,swe,vp",
-               "year" = year_range)
+                "lon" = lon,
+                "vars" = "tmax,tmin,dayl,prcp,srad,swe,vp",
+                "year" = year_range)
   
   # create filenames for the output files
   daymet_file <- file.path(normalizePath(path),
@@ -149,12 +148,17 @@ download_daymet <- function(
 
   # trap errors on download, return a general error statement
   # with the most common causes
-  if (httr::http_error(error)){
+  if (httr::status_code(error) == 400){
     file.remove(daymet_tmp_file)
-      stop("Your requested data is outside DAYMET (temporal) coverage,
-            or the server can't be reached. Check your the connection to the
-            server or the coordinates and start/end years!")
+      stop("Your requested data is outside DAYMET spatial coverage.\n
+            Check the requested coordinates.")
   }
+  
+  if (httr::status_code(error) > 400){
+    file.remove(daymet_tmp_file)
+    stop("The server is unreachable, check your connection.")
+  }
+  
   
   # feedback
   if (!silent) {

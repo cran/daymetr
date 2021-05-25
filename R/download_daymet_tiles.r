@@ -15,7 +15,6 @@
 #' @param force \code{TRUE} or \code{FALSE} (default),
 #' override the conservative end year setting
 #' @return downloads netCDF tiles as defined by the Daymet tile grid
-#' @keywords daymet, climate data
 #' @export
 #' @examples
 #' 
@@ -47,11 +46,11 @@ download_daymet_tiles <- function(
   }
   
   # set url path
-  url <- tile_server()
+  server_path <- tile_server()
   
   # grab the projection string. This is a LCC projection.
   # (lazy load the tile_outlines)
-  projection <- sp::CRS(sp::proj4string(daymetr::tile_outlines))
+  projection <- raster::projection(daymetr::tile_outlines)
   
   # override tile selection if tiles are specified on the command line
   if (!missing(tiles)){
@@ -59,10 +58,15 @@ download_daymet_tiles <- function(
   } else if ( length(location) == 2 ){
     
     # create coordinate pairs, with original coordinate  system
-    location <- sp::SpatialPoints(list(location[2],location[1]), projection)
+    location <- sf::st_sf(
+      a = 1,
+      geometry = sf::st_sfc(sf::st_point(c(location[2],location[1]))))
+    sf::st_crs(location) <- 4326
     
     # extract tile for this location
-    tile_selection <- sp::over(location,daymetr::tile_outlines)$TileID
+    tile_selection <- suppressWarnings(
+      sf::st_intersection(location,daymetr::tile_outlines)$TileID
+    )
     
     # do not continue if outside range
     if (is.na(tile_selection)){
@@ -74,17 +78,25 @@ download_daymet_tiles <- function(
     
     # define a polygon which will be intersected with the 
     # tiles object to deterrmine tiles to download
-    rect_corners <- cbind(c(location[2],rep(location[4],2),location[2]),
-                         c(rep(location[3],2),rep(location[1],2)))
+    rect_corners <- list(
+      rbind(
+        c(location[2], location[1]),
+        c(location[4], location[1]),
+        c(location[4], location[3]),
+        c(location[2], location[3]),
+        c(location[2], location[1])
+      ))
     
-    ROI <- sp::SpatialPolygons(
-      list(sp::Polygons(list(sp::Polygon(list(rect_corners))),"bb")),
-                              proj4string = projection)
+    p <- sf::st_sf(
+      a = 1,
+      geometry = sf::st_sfc(sf::st_polygon(rect_corners))
+    )
+    sf::st_crs(p) <- 4326
     
-    # extract unique tiles overlapping the rectangular ROI
-    tile_selection <- unique(sp::over(ROI,
-                                     daymetr::tile_outlines,
-                                     returnList = TRUE)[[1]]$TileID)
+    tile_selection <- suppressWarnings(
+      sf::st_intersection(p,
+                      daymetr::tile_outlines)$TileID
+      )
     
     # check tile selection
     if (!length(tile_selection)){
@@ -131,19 +143,18 @@ download_daymet_tiles <- function(
       for ( k in param ){
         
         # create download string / url  
-        url <- sprintf("%s/%s/%s_%s/%s.nc",url,i,j,i,k)
-                
+        url <- sprintf("%s/%s/%s_%s/%s.nc",server_path,i,j,i,k)
+        
         # create filename for the output file
-        daymet_file <- paste0(path,"/",k,"_",i,"_",j,".nc")
+        daymet_file <- file.path(path, paste0(k,"_",i,"_",j,".nc"))
         
         # provide some feedback if required
         if(!silent){
-          cat(paste0('\nDownloading DAYMET data for tile: ',j,
+          message(paste0('\nDownloading DAYMET data for tile: ',j,
                     '; year: ',i,
-                    '; product: ',k,
-                    '\n'))
+                    '; product: ',k))
         }
-          
+        
         # download data, force binary data mode
         if(silent){
           status <- try(utils::capture.output(
@@ -154,15 +165,16 @@ download_daymet_tiles <- function(
           
         } else {
           status <- try(httr::GET(url = url,
-                                 httr::write_disk(path = daymet_file,
-                                                  overwrite = TRUE),
+                                 httr::write_disk(
+                                   path = daymet_file,
+                                   overwrite = TRUE),
                                  httr::progress()),
                        silent = TRUE)
         }
         
-        # error / stop on 400 error
+        # error message on 400 error
         if(inherits(status,"try-error")){
-          cat("download failed ... (check warning messages)")
+          message("download failed ... (check warning messages)")
         }
       }
     }

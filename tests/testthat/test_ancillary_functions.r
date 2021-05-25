@@ -1,9 +1,6 @@
 context("test ancillary functions")
 
-server_check <- daymet_running(tile_server())
-
-test_that("check offset routine",{
-  skip_if_not(server_check)
+test_that("check offset routine, file conversions",{
   skip_on_cran()
   
   # download the data
@@ -15,10 +12,16 @@ test_that("check offset routine",{
                                       silent = TRUE))
   
   # create a stack of the downloaded data
-  st <- raster::stack(paste(tempdir(),
+  st <- suppressWarnings(raster::stack(paste(tempdir(),
                            c("tmin_daily_1981_ncss.nc",
                              "tmin_daily_1982_ncss.nc"),
-                           sep = "/"))
+                           sep = "/")))
+  
+  # convert nc to tif
+  expect_message(nc2tif())
+  expect_silent(nc2tif(silent = TRUE))
+  expect_message(nc2tif())
+  expect_message(nc2tif(overwrite = TRUE))
   
   # correct offset
   expect_silent(daymet_grid_offset(st))
@@ -27,9 +30,14 @@ test_that("check offset routine",{
   expect_error(daymet_grid_offset(raster::dropLayer(st, 1)))
 })
 
+test_that("check server uptime",{
+  expect_true(
+    daymetr:::daymet_running("https://thredds.daac.ornl.gov") 
+  )
+})
+
 # check the calculation of a mean values
 test_that("tmean grid checks",{
-  skip_if_not(server_check)
   skip_on_cran()
   
   # download the data
@@ -54,11 +62,11 @@ test_that("tmean grid checks",{
                                      internal = TRUE))
   
   expect_error(daymet_grid_tmean(path = tempdir(),
-                                     product = 9753,
+                                     product = 0,
                                      year = 1980))
   
   expect_error(daymet_grid_tmean(path = tempdir(),
-                                     product = 9753,
+                                     product = 0,
                                      year = NULL))
   
   # remove one file of the temperature pair (tmin)
@@ -74,7 +82,6 @@ test_that("tmean grid checks",{
 
 # check conversion to geotiff
 test_that("tile download and format conversion checks",{
-  skip_if_not(server_check)
   skip_on_cran()
   
   # download the data
@@ -86,12 +93,11 @@ test_that("tile download and format conversion checks",{
   # check conversion to geotiff of all
   # data types (daily, monthly, annual)
   expect_message(nc2tif(path = tempdir(),
-                                overwrite = TRUE))
+                        overwrite = TRUE))
 })
 
 # check aggregation
 test_that("tile aggregation checks",{
-  skip_if_not(server_check)
   skip_on_cran()
   
   # download the data
@@ -157,7 +163,6 @@ test_that("tile aggregation checks",{
 
 # test read_daymet header formatting
 test_that("read_daymet checks of meta-data",{
-  skip_if_not(server_check)
   skip_on_cran()
   
   # download verbose and external
@@ -199,7 +204,6 @@ test_that("read_daymet checks of meta-data",{
 
 # calc_nd checks
 test_that("calc_nd checks",{
-  skip_if_not(server_check)
   skip_on_cran()
   
   # download daily gridded data
@@ -209,17 +213,20 @@ test_that("calc_nd checks",{
   # read in the Daymet file and report back the number
   # of days in a year with a minimum temperature lower
   # than 15 degrees C
-  expect_output(str(calc_nd(file.path(tempdir(),"tmin_daily_1980_ncss.nc"),
+  expect_output(str(calc_nd(
+              file = file.path(tempdir(),"tmin_daily_1980_ncss.nc"),
               criteria = "<",
               value = 15,
               internal = TRUE)))
   
   # internal processing
-  expect_output(str(calc_nd(file.path(tempdir(),"tmin_daily_1980_ncss.nc"),
+  expect_output(str(calc_nd(
+              file = file.path(tempdir(),"tmin_daily_1980_ncss.nc"),
               criteria = "<",
               value = 15,
               start_doy = 40,
               end_doy = 80,
+              path = tempdir(),
               internal = FALSE)))
   
   # criteria fail

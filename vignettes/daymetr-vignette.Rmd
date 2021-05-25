@@ -1,5 +1,5 @@
 ---
-title: "daymetr"
+title: "daymetr functionality"
 author: "Koen Hufkens"
 date: "`r Sys.Date()`"
 output: rmarkdown::html_vignette
@@ -19,7 +19,7 @@ knitr::opts_chunk$set(
 library(daymetr)
 library(ncdf4)
 library(raster)
-library(sp)
+library(sf)
 library(dplyr)
 library(ggplot2)
 
@@ -27,7 +27,7 @@ library(ggplot2)
 tile_outlines
 
 ```
-A programmatic interface to the [Daymet web services](http://daymet.ornl.gov). Allows for easy downloads of Daymet climate data directly to your R workspace or your computer. Routines for both single pixel data downloads and gridded (netCDF) data are provided. Below you find a number of worked example on mostly smaller datasets to illustrate the utility of the package.
+A programmatic interface to the [Daymet web services](https://daymet.ornl.gov). Allows for easy downloads of Daymet climate data directly to your R workspace or your computer. Routines for both single pixel data downloads and gridded (netCDF) data are provided. Below you find a number of worked example on mostly smaller datasets to illustrate the utility of the package.
 
 ## Downloading single pixel data
 
@@ -120,10 +120,14 @@ param         | climate variable you want to download vapour pressure (vp), mini
 
 The daymet package also includes spatial polygon data frame outlining all the tiles in the Daymet repository (tile_outlines). This data can be used to extract all relevant tiles for an analysis by calculating the intersect between a geographic region of interest and this file.
 
-```{r, fig.width = 7, fig.height = 7}
+```{r, eval = TRUE, fig.width = 7, fig.height = 7}
 # plot the tile outlines
 # roughly painting a picture of North America
-plot(tile_outlines)
+p <- ggplot(tile_outlines)+ 
+  geom_sf() +
+  theme_void()
+
+print(p)
 ```
 
 ### *Querying tiled data*
@@ -172,8 +176,8 @@ The above figure shows nicely how you can query a small subset of the Daymet dat
 # read in the demo data from the package for speed
 r <- raster::stack(system.file(package = "daymetr","extdata/tmin_monavg_1980_ncss.nc"))
 
-# to set the correct projection use
-raster::projection(r) <- "+proj=lcc +lat_1=25 +lat_2=60 +lat_0=42.5 +lon_0=-100 +x_0=0 +y_0=0 +a=6378137 +b=6356752.314706705 +units=m +no_defs"
+# to set the correct projection
+raster::projection(r) <- "+proj=lcc +lat_1=25 +lat_2=60 +lat_0=42.5 +lon_0=-100 +x_0=0 +y_0=0 +ellps=WGS84 +units=km +no_defs"
 
 # reproject to lat lon
 r <- raster::projectRaster(r, crs = "+init=epsg:4326")
@@ -192,6 +196,13 @@ r_tmean <- daymet_grid_tmean(path = system.file(package = "daymetr","extdata"),
                             year = 1980,
                             internal = TRUE)
 
+# to set the correct projection
+raster::projection(r_tmean) <- "+proj=lcc +lat_1=25 +lat_2=60 +lat_0=42.5 +lon_0=-100 +x_0=0 +y_0=0 +ellps=WGS84 +units=km +no_defs"
+
+# reproject to lat lon
+r_tmean <- raster::projectRaster(r_tmean, crs = "+init=epsg:4326")
+
+
 # plot the mean temperature raster
 plot(r_tmean)
 ```
@@ -200,7 +211,7 @@ I hope the vignette provided you with an overview of the capabilities of the day
 
 ## Reference
 
-Hufkens K., Basler J. D., Milliman T. Melaas E., Richardson A.D. 2018 [An integrated phenology modelling framework in R: Phenology modelling with phenor. Methods in Ecology & Evolution](http://onlinelibrary.wiley.com/doi/10.1111/2041-210X.12970/full), 9:1-10.
+Hufkens K., Basler J. D., Milliman T. Melaas E., Richardson A.D. (2018) An integrated phenology modelling framework in R: Phenology modelling with phenor. Methods in Ecology & Evolution, 9:1-10.
 
 ## Acknowledgements
 

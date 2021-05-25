@@ -1,4 +1,4 @@
-## ----setup, include = FALSE----------------------------------------------
+## ----setup, include = FALSE---------------------------------------------------
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>"
@@ -8,7 +8,7 @@ knitr::opts_chunk$set(
 library(daymetr)
 library(ncdf4)
 library(raster)
-library(sp)
+library(sf)
 library(dplyr)
 library(ggplot2)
 
@@ -16,7 +16,7 @@ library(ggplot2)
 tile_outlines
 
 
-## ----eval = FALSE--------------------------------------------------------
+## ----eval = FALSE-------------------------------------------------------------
 #  df <- download_daymet(site = "Oak Ridge National Laboratories",
 #                  lat = 36.0133,
 #                  lon = -84.2625,
@@ -25,22 +25,22 @@ tile_outlines
 #                  internal = TRUE,
 #                  simplify = TRUE) # return tidy data !!
 
-## ----eval = FALSE--------------------------------------------------------
+## ----eval = FALSE-------------------------------------------------------------
 #  # code is not run
 #  download_daymet_batch(file_location = 'my_sites.csv',
 #                        start = 1980,
 #                        end = 2010,
 #                        internal = TRUE)
 
-## ----eval = TRUE, echo = FALSE, warning=FALSE, message=FALSE, error=FALSE----
+## ----eval = TRUE, echo = FALSE, warning=FALSE, message=FALSE, error=FALSE-----
 # load demo data in package
 df <- read_daymet(system.file(package = "daymetr","extdata/demo_data.csv"),
                  simplify = TRUE)
 
-## ----eval = TRUE---------------------------------------------------------
+## ----eval = TRUE--------------------------------------------------------------
 str(df)
 
-## ----fig.width = 7, fig.height=3-----------------------------------------
+## ----fig.width = 7, fig.height=3----------------------------------------------
 # simple graph of Daymet data
 df %>%
   mutate(date = as.Date(paste(year, yday, sep = "-"), "%Y-%j")) %>%
@@ -49,7 +49,7 @@ df %>%
   geom_line(aes(x = date, y = value)) +
   facet_wrap(~ measurement, ncol = 2)
 
-## ----eval = FALSE--------------------------------------------------------
+## ----eval = FALSE-------------------------------------------------------------
 #  # code not run
 #  df %>%
 #    mutate(date = as.Date(paste(year, yday, sep = "-"), "%Y-%j")) %>%
@@ -57,12 +57,16 @@ df %>%
 #    filter(measurement == "tmax..deg.c." | measurement == "tmin..deg.c.") %>%
 #    summarize(mean_temp = mean(value))
 
-## ---- fig.width = 7, fig.height = 7--------------------------------------
+## ---- eval = TRUE, fig.width = 7, fig.height = 7------------------------------
 # plot the tile outlines
 # roughly painting a picture of North America
-plot(tile_outlines)
+p <- ggplot(tile_outlines)+ 
+  geom_sf() +
+  theme_void()
 
-## ----eval = FALSE--------------------------------------------------------
+print(p)
+
+## ----eval = FALSE-------------------------------------------------------------
 #  # code not run
 #  
 #  # Download tiled data for multiple years (1980 - 2012)
@@ -82,7 +86,7 @@ plot(tile_outlines)
 #                        param = "tmin")
 #  
 
-## ---- eval = FALSE-------------------------------------------------------
+## ---- eval = FALSE------------------------------------------------------------
 #  # download monthly
 #  download_daymet_ncss(location = c(34, -82, 33.75, -81.75),
 #                       start = 1980,
@@ -92,12 +96,12 @@ plot(tile_outlines)
 #                       path = tempdir(),
 #                       silent = TRUE)
 
-## ---- fig.width = 7, fig.height = 7, warning=FALSE, message=FALSE--------
+## ---- fig.width = 7, fig.height = 7, warning=FALSE, message=FALSE-------------
 # read in the demo data from the package for speed
 r <- raster::stack(system.file(package = "daymetr","extdata/tmin_monavg_1980_ncss.nc"))
 
-# to set the correct projection use
-raster::projection(r) <- "+proj=lcc +lat_1=25 +lat_2=60 +lat_0=42.5 +lon_0=-100 +x_0=0 +y_0=0 +a=6378137 +b=6356752.314706705 +units=m +no_defs"
+# to set the correct projection
+raster::projection(r) <- "+proj=lcc +lat_1=25 +lat_2=60 +lat_0=42.5 +lon_0=-100 +x_0=0 +y_0=0 +ellps=WGS84 +units=km +no_defs"
 
 # reproject to lat lon
 r <- raster::projectRaster(r, crs = "+init=epsg:4326")
@@ -105,12 +109,19 @@ r <- raster::projectRaster(r, crs = "+init=epsg:4326")
 # plot the monthly mean minimum temperature for 1980
 plot(r)
 
-## ---- , fig.width = 7, fig.height = 7, warning=FALSE, message=FALSE------
+## ---- , fig.width = 7, fig.height = 7, warning=FALSE, message=FALSE-----------
 # plot the monthly mean minimum temperature for 1980
 r_tmean <- daymet_grid_tmean(path = system.file(package = "daymetr","extdata"),
                             product = "monavg",
                             year = 1980,
                             internal = TRUE)
+
+# to set the correct projection
+raster::projection(r_tmean) <- "+proj=lcc +lat_1=25 +lat_2=60 +lat_0=42.5 +lon_0=-100 +x_0=0 +y_0=0 +ellps=WGS84 +units=km +no_defs"
+
+# reproject to lat lon
+r_tmean <- raster::projectRaster(r_tmean, crs = "+init=epsg:4326")
+
 
 # plot the mean temperature raster
 plot(r_tmean)

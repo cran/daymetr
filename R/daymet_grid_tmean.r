@@ -10,7 +10,6 @@
 #' @param internal \code{TRUE} / \code{FALSE} (if \code{FALSE},
 #' write the output to file)
 #' using the Daymet file format protocol.
-#' @keywords modelling, mean daily temperature
 #' @export
 #' @examples
 #'
@@ -55,7 +54,7 @@ daymet_grid_tmean <- function(
   }
   
   # depending on the input query find the necessary data files
-  if(!is.na(as.numeric(product))){
+  if(!is.character(product)){
     # list all files
     tmin <- sprintf('%s/tmin_%s_%s.nc',path, year, product)
     tmax <- sprintf('%s/tmax_%s_%s.nc',path, year, product)
@@ -78,17 +77,21 @@ daymet_grid_tmean <- function(
   l <- rep(1:(raster::nlayers(minmax_stack)/2),2)
   
   # calculate layer mean, but back in tmean stack
-  tmean_stack <- raster::stackApply(minmax_stack,
-                                   indices = l,
-                                   fun = mean,
-                                   na.rm = TRUE)
+  tmean_stack <- suppressWarnings(
+    raster::stackApply(minmax_stack,
+                       indices = l,
+                       fun = mean,
+                       na.rm = TRUE)
+    )
 
   # return all data to raster, either as a geotiff
   # or as a local object
   if (internal == FALSE){
+    suppressWarnings(
       raster::writeRaster(tmean_stack,
                           output_file,
                           overwrite = TRUE)
+    )
   } else {
     return(tmean_stack)
   }
