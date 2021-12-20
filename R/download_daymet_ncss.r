@@ -18,6 +18,9 @@
 #' @param silent suppress the verbose output
 #' @param force \code{TRUE} or \code{FALSE} (default),
 #' override the conservative end year setting
+#' @param ssl \code{TRUE} (default) or \code{FALSE},
+#' override default SSL settings in case of CA issues
+#' 
 #' @return netCDF data file of an area circumscribed by the location bounding
 #' box
 #' @export
@@ -56,11 +59,20 @@ download_daymet_ncss <- function(
   mosaic = "na",
   path = tempdir(),
   silent = FALSE,
-  force = FALSE
+  force = FALSE,
+  ssl = TRUE
 ){
   # CRAN file policy
   if (identical(path, tempdir())){
     message("NOTE: data is stored in tempdir() ...")
+  }
+  
+  # temp. fix set SSL verify config to ignore
+  # service is non critical (no encryption needed)
+  # assuming CA authority issues are ORNL issues
+  # not a man in the middle attack
+  if (!ssl){
+    httr::set_config(httr::config(ssl_verifypeer = 0L))
   }
   
   # remove capitals from frequency
