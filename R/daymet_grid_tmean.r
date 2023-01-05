@@ -10,6 +10,8 @@
 #' @param internal \code{TRUE} / \code{FALSE} (if \code{FALSE},
 #' write the output to file)
 #' using the Daymet file format protocol.
+#'
+#' @import ncdf4
 #' @export
 #' @examples
 #'
@@ -71,26 +73,30 @@ daymet_grid_tmean <- function(
   }
   
   # load everything into a raster stack
-  minmax_stack <- suppressWarnings(raster::stack(tmin, tmax))
+  minmax_stack <- suppressWarnings(c(terra::rast(tmin), terra::rast(tmax)))
   
   # list layers
-  l <- rep(1:(raster::nlayers(minmax_stack)/2),2)
+  l <- rep(1:(terra::nlyr(minmax_stack)/2),2)
   
   # calculate layer mean, but back in tmean stack
   tmean_stack <- suppressWarnings(
-    raster::stackApply(minmax_stack,
-                       indices = l,
-                       fun = mean,
-                       na.rm = TRUE)
+    terra::tapp(
+      minmax_stack,
+      index = l,
+      fun = mean,
+      na.rm = TRUE
+      )
     )
 
   # return all data to raster, either as a geotiff
   # or as a local object
   if (internal == FALSE){
     suppressWarnings(
-      raster::writeRaster(tmean_stack,
-                          output_file,
-                          overwrite = TRUE)
+      terra::writeRaster(
+        tmean_stack,
+        output_file,
+        overwrite = TRUE
+      )
     )
   } else {
     return(tmean_stack)

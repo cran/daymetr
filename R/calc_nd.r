@@ -19,6 +19,8 @@
 #' statistics for every pixel which meet the predefined criteria. Output files
 #' if written to file will be named nd_YYYY.tif (with YYYY the year of the
 #' processed tile or ncss netCDF file).
+#' 
+#' @import ncdf4
 #' @export
 #' @examples
 #'
@@ -36,7 +38,7 @@
 #'             internal = TRUE)
 #'             
 #' # plot the output
-#' raster::plot(r)
+#' terra::plot(r)
 #' }
 
 calc_nd <- function(
@@ -66,17 +68,17 @@ calc_nd <- function(
   }
   
   # load desired bands from file
-  data <- suppressWarnings(raster::stack(file,
-                                         bands = c(start_doy:end_doy)))
+  data <- terra::rast(file, lyrs = c(start_doy:end_doy))
   
   # use a binary operator to identify pixels that meet the criteria
-  sel <- raster::overlay(x = data,
-                         fun = function(x) do.call(criteria, list(x, value)))
+  sel <- do.call(criteria, list(data, value))
   
   # use SUM to gather the number of days that meet the criteria
-  result <- raster::calc(x = sel,
-                         fun = sum,
-                         na.rm = TRUE)
+  result <- terra::app(
+    x = sel,
+    fun = sum,
+    na.rm = TRUE
+  )
   
   # return all data to raster, either as a geotiff or as a local object
   if (internal == FALSE){
@@ -87,9 +89,13 @@ calc_nd <- function(
                              sprintf('nd_%s.tif',year))
     
     # write result to file
-    suppressWarnings(raster::writeRaster(result,
-                        output_file,
-                        overwrite = TRUE))
+    suppressWarnings(
+      terra::writeRaster(
+        result,
+        output_file,
+        overwrite = TRUE
+        )
+      )
   } else {
     # return result
     return(result)

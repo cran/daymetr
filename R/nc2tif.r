@@ -15,6 +15,8 @@
 #' @param silent limit verbose output (default = FALSE)
 #' @return Converted geotiff files of all netCDF data in the provided
 #' directory (path).
+#' 
+#' @import ncdf4
 #' @export
 #' @examples
 #'
@@ -29,7 +31,7 @@
 #'  download_daymet_ncss(param = "tmin",
 #'                       frequency = "annual",
 #'                       path = tempdir(),
-#'                       silent = TRUE))
+#'                       silent = TRUE)
 #'  
 #'  # convert files from nc to tif
 #'  nc2tif(path = tempdir(),
@@ -45,7 +47,7 @@ nc2tif <- function(
   files = NULL,
   overwrite = FALSE,
   silent = FALSE
-  ){
+  ) {
 
   # CRAN file policy
   if (identical(path, tempdir())  && !silent){
@@ -61,9 +63,11 @@ nc2tif <- function(
   # from provided path
   if(is.null(files)){
     # make a vector of all .nc files in the directory
-    files <- list.files(path=path,
-                        pattern="\\.nc$",
-                        full.names=TRUE)
+    files <- list.files(
+      path=path,
+      pattern="\\.nc$",
+      full.names = TRUE
+      )
   }
   
   # removing written files from write list if overwrite=FALSE
@@ -87,20 +91,18 @@ nc2tif <- function(
   # begin looping through files
   lapply(files, function(file){
     
-    if(!any(grep(pattern="annttl|annavg", file))){
-      data <- try(suppressWarnings(raster::brick(file)), silent = TRUE)
-    }else{
-      data <- try(suppressWarnings(raster::raster(file)), silent = TRUE)
-    }
-
+    data <- try(terra::rast(file))
+    
     if(inherits(data, "try-error")){
       message("Conversion error...corrupt file?")
     } else {
       suppressWarnings(
-        raster::writeRaster(data,
-                            filename = tools::file_path_sans_ext(file),
-                            format = "GTiff",
-                            overwrite = TRUE)    
+        terra::writeRaster(
+          data,
+          filename = paste0(tools::file_path_sans_ext(file),".tif"),
+          gdal=c("COMPRESS=DEFLATE"),
+          overwrite = TRUE
+        )
       )
     }
   })

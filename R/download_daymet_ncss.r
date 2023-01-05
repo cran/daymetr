@@ -10,7 +10,7 @@
 #' The default setting is ALL, this will download all the previously mentioned
 #' climate variables.
 #' @param frequency frequency of the data requested (default = "daily", other
-#' options are "monthly" or "annual".
+#' options are "monthly" or "annual").
 #' @param mosaic which tile mosiac to source from (na = Northern America,
 #' hi = Hawaii, pr = Puerto Rico), defaults to "na".
 #' @param path directory where to store the downloaded data 
@@ -79,7 +79,7 @@ download_daymet_ncss <- function(
   frequency <- tolower(frequency)
   
   # check if there are enough coordinates specified
-  if (length(location)!=4){
+  if (length(location) != 4){
     stop("check coordinates format: top-left / bottom-right c(lat,lon,lat,lon)")
   }
   
@@ -127,9 +127,11 @@ download_daymet_ncss <- function(
       
       if (frequency != "daily"){
         
-        prefix <- ifelse(j != "prcp",
-                         paste0(substr(frequency,1,3),"avg"),
-                         paste0(substr(frequency,1,3),"ttl"))
+        prefix <- ifelse(
+          j != "prcp",
+          paste0(substr(frequency,1,3),"avg"),
+          paste0(substr(frequency,1,3),"ttl")
+          )
         
         # create url string (varies per product / year)
         url <- sprintf("%s/daymet_v4_%s_%s_%s_%s.nc",

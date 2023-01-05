@@ -9,7 +9,7 @@ output:
     ]
 vignette: >
   %\VignetteIndexEntry{daymetr functionality}
-  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEngine{knitr::knitr}
   %\VignetteEncoding{UTF-8}
   
 ---
@@ -23,7 +23,7 @@ knitr::opts_chunk$set(
 # load the library
 library(daymetr)
 library(ncdf4)
-library(raster)
+library(terra)
 library(sf)
 library(dplyr)
 library(ggplot2)
@@ -39,13 +39,15 @@ A programmatic interface to the [Daymet web services](https://daymet.ornl.gov). 
 A common application of daymet data is the extraction of local climate data, at a given location. This data will be extracted from a pixel within the gridded daymet dataset corresponding to a location provided in latitude / longitude format. You can download a dataset for a single location using the following format:
 
 ```{r eval = FALSE}
-df <- download_daymet(site = "Oak Ridge National Laboratories",
-                lat = 36.0133,
-                lon = -84.2625,
-                start = 2000,
-                end = 2010,
-                internal = TRUE,
-                simplify = TRUE) # return tidy data !!
+df <- download_daymet(
+  site = "Oak Ridge National Laboratories",
+  lat = 36.0133,
+  lon = -84.2625,
+  start = 2000,
+  end = 2010,
+  internal = TRUE,
+  simplify = TRUE # return tidy data !!
+  ) 
 ```
 
 With the *internal* parameter flag set to TRUE the data will be exported as a nested list to your terminal or a variable if assigned. If this parameter is set to FALSE the data will be written to a file on disk in your current working directory (i.e. getwd()). If you want to change the location where files are written to disk use the *path* parameter. For a full list of parameters see the table below.
@@ -54,10 +56,12 @@ There also is a batch mode which uses similar parameters but you provide a comma
 
 ```{r eval = FALSE}
 # code is not run
-download_daymet_batch(file_location = 'my_sites.csv',
-                      start = 1980,
-                      end = 2010,
-                      internal = TRUE)
+download_daymet_batch(
+  file_location = 'my_sites.csv',
+  start = 1980,
+  end = 2010,
+  internal = TRUE
+  )
 ```
 
 Parameter     | Description                      
@@ -75,8 +79,10 @@ Data downloaded into the workspace, e.g. the **df** data frame in the above exam
 
 ```{r eval = TRUE, echo = FALSE, warning=FALSE, message=FALSE, error=FALSE}
 # load demo data in package
-df <- read_daymet(system.file(package = "daymetr","extdata/demo_data.csv"),
-                 simplify = TRUE)
+df <- read_daymet(
+  system.file(package = "daymetr","extdata/demo_data.csv"),
+  simplify = TRUE
+  )
 ```
 
 
@@ -173,43 +179,44 @@ download_daymet_ncss(location = c(34, -82, 33.75, -81.75),
                      param = c("tmin","tmax"),
                      path = tempdir(),
                      silent = TRUE)
+
+# convert nc files to geotiff
+nc2tif(tempdir())
 ```
 
 The above figure shows nicely how you can query a small subset of the Daymet data. However, a common climate variable, the mean temperature is not provided. As such you may calculate these values using the daymet_grid_tmean() function. This function calculates the mean temperature for a given tile / or ncss subset provided that matching minimum and maximum netCDF files can be found in the same directory.
 
 ```{r , fig.width = 7, fig.height = 7, warning=FALSE, message=FALSE}
 # read in the demo data from the package for speed
-r <- raster::stack(system.file(package = "daymetr","extdata/tmin_monavg_1980_ncss.nc"))
+r <- terra::rast(
+  system.file(package = "daymetr","extdata/tmin_monavg_1980_ncss.tif")
+  )
 
-# to set the correct projection
-raster::projection(r) <- "+proj=lcc +lat_1=25 +lat_2=60 +lat_0=42.5 +lon_0=-100 +x_0=0 +y_0=0 +ellps=WGS84 +units=km +no_defs"
+# set the correct projection
+r <- terra::project(
+    r,
+    "+proj=lcc +lat_1=25 +lat_2=60 +lat_0=42.5 +lon_0=-100 +x_0=0 +y_0=0 +ellps=WGS84 +units=km +no_defs"
+  )
+
+plot(r)
 
 # reproject to lat lon
-r <- raster::projectRaster(r, crs = "+init=epsg:4326")
+r <- terra::project(r, "+init=epsg:4326")
 
 # plot the monthly mean minimum temperature for 1980
 plot(r)
 ```
 
+Below we search in the temporary directory of R for the downloaded monthly minimum and maximum temperature ncss files for the year 1980 (see paramteres specified) and calculate the mean monthly temperature for this year.
 
-Below we search in the temporary directory of R for the downloaded monthly minimum and maximum temperature ncss files for the year 1980 (see paramteres specified) and calculate the mean monthly temperature for this year. The resulting plot, obviously, reports consistently higher values than the ones in the graph above.
-
-```{r, , fig.width = 7, fig.height = 7, warning=FALSE, message=FALSE}
+```{r, , fig.width = 7, fig.height = 7, warning=FALSE, message=FALSE, eval = FALSE}
 # plot the monthly mean minimum temperature for 1980
-r_tmean <- daymet_grid_tmean(path = system.file(package = "daymetr","extdata"),
-                            product = "monavg",
-                            year = 1980,
-                            internal = TRUE)
-
-# to set the correct projection
-raster::projection(r_tmean) <- "+proj=lcc +lat_1=25 +lat_2=60 +lat_0=42.5 +lon_0=-100 +x_0=0 +y_0=0 +ellps=WGS84 +units=km +no_defs"
-
-# reproject to lat lon
-r_tmean <- raster::projectRaster(r_tmean, crs = "+init=epsg:4326")
-
-
-# plot the mean temperature raster
-plot(r_tmean)
+r_tmean <- daymet_grid_tmean(
+  path = system.file(package = "daymetr","extdata"),
+  product = "monavg",
+  year = 1980,
+  internal = TRUE
+  )
 ```
 
 I hope the vignette provided you with an overview of the capabilities of the daymetr package. Please report all bugs or feature requests on the project's github page. If you found the software useful in your work please use the below reference to cite the package.

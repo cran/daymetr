@@ -7,7 +7,7 @@ knitr::opts_chunk$set(
 # load the library
 library(daymetr)
 library(ncdf4)
-library(raster)
+library(terra)
 library(sf)
 library(dplyr)
 library(ggplot2)
@@ -17,25 +17,31 @@ tile_outlines
 
 
 ## ----eval = FALSE-------------------------------------------------------------
-#  df <- download_daymet(site = "Oak Ridge National Laboratories",
-#                  lat = 36.0133,
-#                  lon = -84.2625,
-#                  start = 2000,
-#                  end = 2010,
-#                  internal = TRUE,
-#                  simplify = TRUE) # return tidy data !!
+#  df <- download_daymet(
+#    site = "Oak Ridge National Laboratories",
+#    lat = 36.0133,
+#    lon = -84.2625,
+#    start = 2000,
+#    end = 2010,
+#    internal = TRUE,
+#    simplify = TRUE # return tidy data !!
+#    )
 
 ## ----eval = FALSE-------------------------------------------------------------
 #  # code is not run
-#  download_daymet_batch(file_location = 'my_sites.csv',
-#                        start = 1980,
-#                        end = 2010,
-#                        internal = TRUE)
+#  download_daymet_batch(
+#    file_location = 'my_sites.csv',
+#    start = 1980,
+#    end = 2010,
+#    internal = TRUE
+#    )
 
 ## ----eval = TRUE, echo = FALSE, warning=FALSE, message=FALSE, error=FALSE-----
 # load demo data in package
-df <- read_daymet(system.file(package = "daymetr","extdata/demo_data.csv"),
-                 simplify = TRUE)
+df <- read_daymet(
+  system.file(package = "daymetr","extdata/demo_data.csv"),
+  simplify = TRUE
+  )
 
 ## ----eval = TRUE--------------------------------------------------------------
 str(df)
@@ -95,34 +101,36 @@ print(p)
 #                       param = c("tmin","tmax"),
 #                       path = tempdir(),
 #                       silent = TRUE)
+#  
+#  # convert nc files to geotiff
+#  nc2tif(tempdir())
 
 ## ---- fig.width = 7, fig.height = 7, warning=FALSE, message=FALSE-------------
 # read in the demo data from the package for speed
-r <- raster::stack(system.file(package = "daymetr","extdata/tmin_monavg_1980_ncss.nc"))
+r <- terra::rast(
+  system.file(package = "daymetr","extdata/tmin_monavg_1980_ncss.tif")
+  )
 
-# to set the correct projection
-raster::projection(r) <- "+proj=lcc +lat_1=25 +lat_2=60 +lat_0=42.5 +lon_0=-100 +x_0=0 +y_0=0 +ellps=WGS84 +units=km +no_defs"
+# set the correct projection
+r <- terra::project(
+    r,
+    "+proj=lcc +lat_1=25 +lat_2=60 +lat_0=42.5 +lon_0=-100 +x_0=0 +y_0=0 +ellps=WGS84 +units=km +no_defs"
+  )
+
+plot(r)
 
 # reproject to lat lon
-r <- raster::projectRaster(r, crs = "+init=epsg:4326")
+r <- terra::project(r, "+init=epsg:4326")
 
 # plot the monthly mean minimum temperature for 1980
 plot(r)
 
-## ---- , fig.width = 7, fig.height = 7, warning=FALSE, message=FALSE-----------
-# plot the monthly mean minimum temperature for 1980
-r_tmean <- daymet_grid_tmean(path = system.file(package = "daymetr","extdata"),
-                            product = "monavg",
-                            year = 1980,
-                            internal = TRUE)
-
-# to set the correct projection
-raster::projection(r_tmean) <- "+proj=lcc +lat_1=25 +lat_2=60 +lat_0=42.5 +lon_0=-100 +x_0=0 +y_0=0 +ellps=WGS84 +units=km +no_defs"
-
-# reproject to lat lon
-r_tmean <- raster::projectRaster(r_tmean, crs = "+init=epsg:4326")
-
-
-# plot the mean temperature raster
-plot(r_tmean)
+## ---- , fig.width = 7, fig.height = 7, warning=FALSE, message=FALSE, eval = FALSE----
+#  # plot the monthly mean minimum temperature for 1980
+#  r_tmean <- daymet_grid_tmean(
+#    path = system.file(package = "daymetr","extdata"),
+#    product = "monavg",
+#    year = 1980,
+#    internal = TRUE
+#    )
 
